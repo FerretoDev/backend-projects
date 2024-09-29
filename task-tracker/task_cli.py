@@ -106,6 +106,28 @@ def mark_task(task_id, status):
 
 # Función principal
 def main():
+    """
+    Main function for the Task Tracker Command Line Interface (CLI).
+
+    This function initializes the task file if it does not exist and sets up the argument parser to handle various commands related to task management. It processes user input to perform actions such as adding, listing, updating, deleting, and marking tasks.
+
+    Args:
+        command (str): The action to perform, which can be one of the following:
+            "add", "list", "update", "delete", "mark-in-progress", or "mark-done".
+        description_or_id (str, optional): The description of the task to add or the ID of the task to update, delete, or mark.
+        extra (str, optional): Additional information for updating a task, such as a new description.
+
+    Returns:
+        None
+
+    Raises:
+        SystemExit: If the command is invalid or required arguments are missing.
+
+    Examples:
+        To add a task: `python task_cli.py add "New Task"`
+        To list all tasks: `python task_cli.py list`
+    """
+
     # Inicializa el archivo de tareas si no existe
     initialize_task_file()
 
