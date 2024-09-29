@@ -1,0 +1,30 @@
+[
+    {
+        "id": 1,
+        "description": "libro",
+        "status": "done",
+        "createdAt": "29-09-2024 14:41",
+        "updatedAt": "29-09-2024 16:38"
+    },
+    {
+        "id": 2,
+        "description": "dormir",
+        "status": "todo",
+        "createdAt": "29-09-2024 15:15",
+        "updatedAt": "29-09-2024 15:15"
+    },
+    {
+        "id": 3,
+        "description": "pura vida",
+        "status": "todo",
+        "createdAt": "29-09-2024 16:02",
+        "updatedAt": "29-09-2024 16:02"
+    },
+    {
+        "id": 4,
+        "description": "Nueva tarea",
+        "status": "todo",
+        "createdAt": "29-09-2024 16:35",
+        "updatedAt": "29-09-2024 16:35"
+    }
+]

@@ -2,220 +2,318 @@ import argparse
 import json
 import os
 from datetime import datetime
+from typing import Dict, List, Optional
 
+from regex import D
 from tabulate import tabulate  # type: ignore
 
 FILENAME = "tasks.json"
-
-current_format = "%d-%m-%Y %H:%M"
-current_date = datetime.now().strftime(current_format)
+DATE_FORMAT = "%d-%m-%Y %H:%M"
 
 
-def initialize_task_file() -> None:
+def get_current_date() -> str:
+    """
+    Retrieves the current date formatted as a string.
+    The date is returned in a predefined format specified by DATE_FORMAT.
+
+    This function uses the current date and time to generate a string representation
+    formatted according to the specified DATE_FORMAT. It is useful for timestamping tasks or events.
+
+    Args:
+        None
+
+    Returns:
+        str: The current date as a formatted string.
+    """
+
+    return datetime.now().strftime(DATE_FORMAT)
+
+
+def initialize_task_file(filename: str = FILENAME) -> None:
     """
     Initializes the task file by creating it if it does not already exist.
-    The task file is created as an empty JSON array.
+    The task file is created as an empty JSON array, and the filename can be specified.
 
-    This function checks for the existence of a predefined filename.
+    This function checks for the existence of the specified filename.
     If the file does not exist, it creates the file and initializes it with an empty JSON array.
 
     Args:
-        None
+        filename (str): The name of the file to initialize. Defaults to FILENAME.
 
     Returns:
         None
     """
 
-    if not os.path.exists(FILENAME):
-        with open(FILENAME, "w") as file:
+    if not os.path.exists(filename):
+        with open(filename, "w") as file:
             json.dump([], file)
 
 
-def read_tasks() -> list[dict]:
+def read_tasks(filename: str = FILENAME) -> List[Dict]:
     """
-    Reads and returns the list of tasks from the task file.
-    The tasks are loaded from a JSON formatted file.
+    Reads and returns the list of tasks from the specified task file.
+    The tasks are expected to be in JSON format and returned as a list of dictionaries.
 
-    This function opens the predefined task file in read mode and loads its contents as a Python object.
-    It expects the file to contain a valid JSON array representing the tasks.
+    This function checks for the existence of the specified filename and raises an error if the file is not found.
+    It attempts to load the contents of the file, ensuring that the data is a valid list.
+    If the file is corrupted or contains invalid JSON, appropriate exceptions are raised.
 
     Args:
-        None
+        filename (str): The name of the file to read tasks from. Defaults to FILENAME.
 
     Returns:
-        list: A list of tasks loaded from the task file.
+        List[Dict]: A list of tasks loaded from the task file.
 
     Raises:
         FileNotFoundError: If the task file does not exist.
-        json.JSONDecodeError: If the file content is not valid JSON.
+        ValueError: If the file content is not a valid list or contains invalid JSON.
     """
 
-    with open(FILENAME, "r") as file:
-        return json.load(file)
+    if not os.path.exists(filename):
+        raise FileNotFoundError(f"Task file '{filename}' not found.")
+
+    with open(filename, "r") as file:
+        try:
+            tasks = json.load(file)
+            if not isinstance(tasks, list):
+                raise ValueError("Tasks file is corrupted or in an ivalid format.")
+            return tasks
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"Tasks file '{filename}' is corrupted or contains invalid JSON."
+            ) from e
 
 
-def write_tasks(tasks: list[dict]) -> None:
+def write_tasks(tasks: List[Dict], filename: str = FILENAME) -> None:
     """
-    Writes the provided list of tasks to the task file.
-    The tasks are saved in a JSON format with indentation for readability.
+    Writes the provided list of tasks to the specified task file in JSON format.
+    The tasks are saved with indentation for improved readability.
 
-    This function opens the predefined task file in write mode and serializes the given list of tasks into JSON format.
+    This function opens the specified filename in write mode and serializes the given list of tasks into JSON format.
     It overwrites any existing content in the file with the new task data.
 
     Args:
-        tasks (list): A list of tasks to be written to the task file.
+        tasks (List[Dict]): A list of tasks to be written to the task file.
+        filename (str): The name of the file to write tasks to. Defaults to FILENAME.
 
     Returns:
         None
     """
 
-    with open(FILENAME, "w") as file:
+    with open(filename, "w") as file:
         json.dump(tasks, file, indent=4)
 
 
-def add_task(description: str) -> None:
+def add_task(description: str, filename: str = FILENAME) -> None:
     """
     Adds a new task with the specified description to the task list.
-    The task is assigned a unique ID and initialized with a default status and timestamps.
+    If the task file does not exist, it initializes a new task file before adding the task.
 
-    This function reads the current list of tasks, generates a new task object with a unique ID, and appends it to the list.
-    After updating the task list, it writes the modified list back to the task file and confirms the addition of the task.
+    This function attempts to read the current list of tasks from the specified file.
+    If the file is not found, it creates a new task file. A new task is then created with a unique ID,
+    default status, and timestamps, and is appended to the task list. Finally, the updated task list is saved back to the file.
 
     Args:
         description (str): A brief description of the task to be added.
+        filename (str): The name of the file to write tasks to. Defaults to FILENAME.
 
     Returns:
         None
     """
 
-    tasks = read_tasks()
-    task_id = len(tasks) + 1
+    try:
+        tasks = read_tasks(filename)
+    except FileNotFoundError:
+        print(f"Task file '{filename}' not found. Initializing a new task file.")
+        initialize_task_file(filename)
+        tasks = []
+
     task = {
-        "id": task_id,
+        "id": len(tasks) + 1,
         "description": description,
         "status": "todo",
-        "createdAt": current_date,
-        "updatedAt": current_date,
+        "createdAt": get_current_date(),
+        "updatedAt": get_current_date(),
     }
     tasks.append(task)
-    write_tasks(tasks)
-    print(f"Task added successfully (ID: {task_id})")
+    write_tasks(tasks, filename)
+    print(f"Task added successfully (ID: {task['id']})")
 
 
-def list_tasks(status=None) -> None:
+def list_tasks(status: Optional[str] = None, filename: str = FILENAME) -> None:
     """
-    Lists all tasks, optionally filtered by their status.
+    Lists all tasks, optionally filtered by their status, from the specified task file.
     The tasks are displayed in a formatted table for easy viewing.
 
-    This function retrieves the current list of tasks and, if a status is provided, filters the tasks accordingly.
-    It then prints the tasks in a grid format, showing relevant details such as ID, description, status, and timestamps.
+    This function attempts to read the current list of tasks from the specified file.
+    If the file cannot be read due to errors, an appropriate message is displayed.
+    If a status is provided, it filters the tasks accordingly.
+    The tasks are then printed in a grid format, showing relevant details such as ID, description, status, and timestamps.
     If no tasks are found, a message is displayed indicating this.
 
     Args:
-        status (str, optional): The status to filter tasks by (e.g., "todo", "done"). Defaults to None.
+        status (Optional[str], optional): The status to filter tasks by (e.g., "todo", "done"). Defaults to None.
+        filename (str): The name of the file to read tasks from. Defaults to FILENAME.
 
     Returns:
         None
     """
 
-    tasks = read_tasks()
+    try:
+        tasks = read_tasks(filename)
+    except (FileNotFoundError, ValueError) as e:
+        print(f"Error reading tasks: {e}")
+        return
+
     if status:
         tasks = [task for task in tasks if task["status"] == status]
 
     if not tasks:
         print("No tasks found.")
-    else:
-        table = [
-            [
-                task["id"],
-                task["description"],
-                task["status"],
-                task["createdAt"],
-                task["updatedAt"],
-            ]
-            for task in tasks
+        return
+
+    table = [
+        [
+            task["id"],
+            task["description"],
+            task["status"],
+            task["createdAt"],
+            task["updatedAt"],
         ]
-        headers = ["ID", "Description", "Status", "Created At", "Updated At"]
-        print(tabulate(table, headers, tablefmt="grid"))
+        for task in tasks
+    ]
+
+    headers = ["ID", "Description", "Status", "Created At", "Updated At"]
+    print(tabulate(table, headers, tablefmt="grid"))
 
 
-def update_task(task_id: int, new_description: str) -> None:
+def update_task(task_id: int, new_description: str, filename: str = FILENAME) -> None:
     """
-    Updates the description of an existing task identified by its ID.
+    Updates the description of an existing task identified by its ID in the specified task file.
     The task's updated timestamp is also modified to reflect the change.
 
-    This function retrieves the current list of tasks and searches for a task with the specified ID.
-    If found, it updates the task's description and the timestamp, then saves the changes back to the task file.
+    This function attempts to read the current list of tasks from the specified file.
+    If the file cannot be read due to errors, an appropriate message is displayed.
+    The function searches for a task with the specified ID, and if found, updates its description and timestamp.
     If the task ID does not exist, a message is printed indicating that the task was not found.
 
     Args:
         task_id (int): The ID of the task to be updated.
         new_description (str): The new description for the task.
+        filename (str): The name of the file to read and write tasks. Defaults to FILENAME.
 
     Returns:
         None
     """
 
-    tasks = read_tasks()
+    try:
+        tasks = read_tasks(filename)
+    except (FileNotFoundError, ValueError) as e:
+        print(f"Error reading tasks: {e}")
+        return
+
     for task in tasks:
         if task["id"] == task_id:
             task["description"] = new_description
-            task["updatedAt"] = current_date
-            write_tasks(tasks)
+            task["updatedAt"] = get_current_date()
+            write_tasks(tasks, filename)
             print(f"Task {task_id} updated successfully.")
             return
+
     print(f"Task with ID {task_id} not found.")
 
 
-# Función para eliminar una tarea
-def delete_task(task_id):
-    tasks = read_tasks()
-    tasks = [task for task in tasks if task["id"] != task_id]
-    write_tasks(tasks)
-    print(f"Task {task_id} deleted successfully.")
-
-
-# Función para marcar una tarea como 'in-progress' o 'done'
-def mark_task(task_id, status):
-    tasks = read_tasks()
-    for task in tasks:
-        if task["id"] == task_id:
-            task["status"] = status
-            task["updatedAt"] = current_date
-            write_tasks(tasks)
-            print(f"Task {task_id} marked as {status}.")
-            return
-    print(f"Task with ID {task_id} not found.")
-
-
-# Función principal
-def main():
+def delete_task(task_id: int, filename: str = FILENAME) -> None:
     """
-    Main function for the Task Tracker Command Line Interface (CLI).
+    Deletes a task identified by its ID from the specified task file.
+    If the task ID does not exist, a message is displayed indicating that the task was not found.
 
-    This function initializes the task file if it does not exist and sets up the argument parser to handle various commands related to task management. It processes user input to perform actions such as adding, listing, updating, deleting, and marking tasks.
+    This function attempts to read the current list of tasks from the specified file.
+    If the file cannot be read due to errors, an appropriate message is displayed.
+    The function creates a new list of tasks excluding the task with the specified ID.
+    If no tasks are removed, it indicates that the task was not found; otherwise, it saves the updated task list back to the file.
 
     Args:
-        command (str): The action to perform, which can be one of the following:
-            "add", "list", "update", "delete", "mark-in-progress", or "mark-done".
-        description_or_id (str, optional): The description of the task to add or the ID of the task to update, delete, or mark.
-        extra (str, optional): Additional information for updating a task, such as a new description.
+        task_id (int): The ID of the task to be deleted.
+        filename (str): The name of the file to read and write tasks. Defaults to FILENAME.
 
     Returns:
         None
+    """
 
-    Raises:
-        SystemExit: If the command is invalid or required arguments are missing.
+    try:
+        tasks = read_tasks(filename)
+    except (FileNotFoundError, ValueError) as e:
+        print(f"Error reading tasks: {e}")
+        return
+
+    new_tasks = [task for task in tasks if task["id"] != task_id]
+
+    if len(new_tasks) == len(tasks):
+        print(f"Task with ID {task_id} not found.")
+        return
+    write_tasks(new_tasks, filename)
+    print(f"Task {task_id} deleted successfully.")
+
+
+def mark_task(task_id: int, status: str, filename: str = FILENAME) -> None:
+    """
+    Marks a task identified by its ID with a specified status in the task file.
+    The task's updated timestamp is also modified to reflect the change.
+
+    This function attempts to read the current list of tasks from the specified file.
+    If the file cannot be read due to errors, an appropriate message is displayed.
+    The function searches for a task with the specified ID, and if found, updates its status and timestamp.
+    If the task ID does not exist, a message is printed indicating that the task was not found.
+
+    Args:
+        task_id (int): The ID of the task to be marked.
+        status (str): The new status to assign to the task.
+        filename (str): The name of the file to read and write tasks. Defaults to FILENAME.
+
+    Returns:
+        None
+    """
+
+    try:
+        tasks = read_tasks(filename)
+    except (FileNotFoundError, ValueError) as e:
+        print(f"Error reading tasks: {e}")
+        return
+    for task in tasks:
+        if task["id"] == task_id:
+            task["status"] = status
+            task["updatedAt"] = get_current_date()
+            write_tasks(tasks, filename)
+            print(f"Task {task_id} marked as {status}.")
+            return
+
+    print(f"Task with ID {task_id} not found.")
+
+
+def main() -> None:
+    """
+    Main entry point for the Task Tracker command-line interface (CLI).
+    This function initializes the task file and processes user commands to manage tasks.
+
+    The function sets up an argument parser to handle various commands such as adding, listing, updating, deleting, and marking tasks.
+    It validates the input and calls the appropriate functions based on the user's command and provided task information.
+    Error messages are displayed for invalid inputs or missing information.
+
+    Args:
+        None
+
+    Returns:
+        None
 
     Examples:
         To add a task: `python task_cli.py add "New Task"`
         To list all tasks: `python task_cli.py list`
+
     """
 
-    # Inicializa el archivo de tareas si no existe
     initialize_task_file()
 
-    # Configura el manejo de argumentos
     parser = argparse.ArgumentParser(description="Task Tracker CLI")
     parser.add_argument(
         "command",
@@ -223,40 +321,59 @@ def main():
         help="Action to perform",
     )
     parser.add_argument(
-        "description_or_id", help="Description of the task or task ID", nargs="?"
-    )
-    parser.add_argument(
-        "extra", help="Additional info (e.g., new description)", nargs="?"
+        "task_info",
+        help="Description of the task or task ID",
+        nargs="?",
+        default=None,
     )
 
     args = parser.parse_args()
 
-    # Manejo de los diferentes comandos
-    if args.command == "add" and args.description_or_id:
-        add_task(args.description_or_id)
+    command = args.command
+    task_info = args.task_info
+    # extra = args.extra
 
-    elif args.command == "list":
-        if args.description_or_id:
-            list_tasks(
-                args.description_or_id
-            )  # Filtrar por estado (done, todo, in-progress)
+    if command == "add":
+        if task_info:
+            add_task(task_info)
         else:
-            list_tasks()  # Listar todas las tareas
+            print("Error: Missing task description for 'add' command.")
 
-    elif args.command == "update" and args.description_or_id and args.extra:
-        update_task(int(args.description_or_id), args.extra)
+    elif command == "list":
+        list_tasks(status=task_info)
 
-    elif args.command == "delete" and args.description_or_id:
-        delete_task(int(args.description_or_id))
+    elif command == "update":
+        if task_info:
+            try:
+                task_id = int(task_info)
+                update_task(task_id)
+            except ValueError:
+                print("Error: Task ID must be an integer.")
+        else:
+            print("Error: Missing task ID or new description for 'update' command.")
 
-    elif args.command == "mark-in-progress" and args.description_or_id:
-        mark_task(int(args.description_or_id), "in-progress")
+    elif command == "delete":
+        if task_info:
+            try:
+                task_id = int(task_info)
+                delete_task(task_id)
+            except ValueError:
+                print("Error: Task ID must be an integer.")
+        else:
+            print("Error: Missing task ID for 'delete' command.")
 
-    elif args.command == "mark-done" and args.description_or_id:
-        mark_task(int(args.description_or_id), "done")
-
+    elif command in ["mark-in-progress", "mark-done"]:
+        if task_info:
+            try:
+                task_id = int(task_info)
+                status = "in-progress" if command == "mark-in-progress" else "done"
+                mark_task(task_id, status)
+            except ValueError:
+                print("Error: Task ID must be an integer.")
+        else:
+            print(f"Error: Missing task ID for '{command}' command.")
     else:
-        print("Invalid command or missing arguments.")
+        print("Invalid command or arguments.")
 
 
 if __name__ == "__main__":
