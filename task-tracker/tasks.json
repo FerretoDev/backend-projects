@@ -51,15 +51,15 @@
     {
         "id": 8,
         "description": "2fsfs",
-        "status": "todo",
+        "status": "in-progress",
         "createdAt": "28-09-2024 23:30",
-        "updatedAt": "28-09-2024 23:30"
+        "updatedAt": "28-09-2024 23:49"
     },
     {
         "id": 9,
         "description": "sss",
-        "status": "todo",
+        "status": "done",
         "createdAt": "28-09-2024 23:30",
-        "updatedAt": "28-09-2024 23:43"
+        "updatedAt": "28-09-2024 23:49"
     }
 ]
