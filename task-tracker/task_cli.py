@@ -11,27 +11,82 @@ current_format = "%d-%m-%Y %H:%M"
 current_date = datetime.now().strftime(current_format)
 
 
-# Función para inicializar el archivo JSON si no existe
-def initialize_task_file():
+def initialize_task_file() -> None:
+    """
+    Initializes the task file by creating it if it does not already exist.
+    The task file is created as an empty JSON array.
+
+    This function checks for the existence of a predefined filename.
+    If the file does not exist, it creates the file and initializes it with an empty JSON array.
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
+
     if not os.path.exists(FILENAME):
         with open(FILENAME, "w") as file:
             json.dump([], file)
 
 
-# Función para leer las tareas
-def read_tasks():
+def read_tasks() -> list[dict]:
+    """
+    Reads and returns the list of tasks from the task file.
+    The tasks are loaded from a JSON formatted file.
+
+    This function opens the predefined task file in read mode and loads its contents as a Python object.
+    It expects the file to contain a valid JSON array representing the tasks.
+
+    Args:
+        None
+
+    Returns:
+        list: A list of tasks loaded from the task file.
+
+    Raises:
+        FileNotFoundError: If the task file does not exist.
+        json.JSONDecodeError: If the file content is not valid JSON.
+    """
+
     with open(FILENAME, "r") as file:
         return json.load(file)
 
 
-# Función para escribir tareas
-def write_tasks(tasks):
+def write_tasks(tasks: list[dict]) -> None:
+    """
+    Writes the provided list of tasks to the task file.
+    The tasks are saved in a JSON format with indentation for readability.
+
+    This function opens the predefined task file in write mode and serializes the given list of tasks into JSON format.
+    It overwrites any existing content in the file with the new task data.
+
+    Args:
+        tasks (list): A list of tasks to be written to the task file.
+
+    Returns:
+        None
+    """
+
     with open(FILENAME, "w") as file:
         json.dump(tasks, file, indent=4)
 
 
-# Función para agregar una tarea
-def add_task(description):
+def add_task(description: str) -> None:
+    """
+    Adds a new task with the specified description to the task list.
+    The task is assigned a unique ID and initialized with a default status and timestamps.
+
+    This function reads the current list of tasks, generates a new task object with a unique ID, and appends it to the list.
+    After updating the task list, it writes the modified list back to the task file and confirms the addition of the task.
+
+    Args:
+        description (str): A brief description of the task to be added.
+
+    Returns:
+        None
+    """
 
     tasks = read_tasks()
     task_id = len(tasks) + 1
@@ -47,8 +102,22 @@ def add_task(description):
     print(f"Task added successfully (ID: {task_id})")
 
 
-# Función para listar todas las tareas
-def list_tasks(status=None):
+def list_tasks(status=None) -> None:
+    """
+    Lists all tasks, optionally filtered by their status.
+    The tasks are displayed in a formatted table for easy viewing.
+
+    This function retrieves the current list of tasks and, if a status is provided, filters the tasks accordingly.
+    It then prints the tasks in a grid format, showing relevant details such as ID, description, status, and timestamps.
+    If no tasks are found, a message is displayed indicating this.
+
+    Args:
+        status (str, optional): The status to filter tasks by (e.g., "todo", "done"). Defaults to None.
+
+    Returns:
+        None
+    """
+
     tasks = read_tasks()
     if status:
         tasks = [task for task in tasks if task["status"] == status]
@@ -70,8 +139,23 @@ def list_tasks(status=None):
         print(tabulate(table, headers, tablefmt="grid"))
 
 
-# Función para actualizar una tarea
-def update_task(task_id, new_description):
+def update_task(task_id: int, new_description: str) -> None:
+    """
+    Updates the description of an existing task identified by its ID.
+    The task's updated timestamp is also modified to reflect the change.
+
+    This function retrieves the current list of tasks and searches for a task with the specified ID.
+    If found, it updates the task's description and the timestamp, then saves the changes back to the task file.
+    If the task ID does not exist, a message is printed indicating that the task was not found.
+
+    Args:
+        task_id (int): The ID of the task to be updated.
+        new_description (str): The new description for the task.
+
+    Returns:
+        None
+    """
+
     tasks = read_tasks()
     for task in tasks:
         if task["id"] == task_id:
@@ -175,6 +259,5 @@ def main():
         print("Invalid command or missing arguments.")
 
 
-# Ejecuta la función main() si se llama directamente el script
 if __name__ == "__main__":
     main()
