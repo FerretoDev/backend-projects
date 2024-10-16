@@ -4,7 +4,6 @@ import os
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from regex import D
 from tabulate import tabulate  # type: ignore
 
 FILENAME = "tasks.json"
